@@ -1,0 +1,43 @@
+# Version control
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+env/
+venv/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Node/Frontend
+node_modules/
+frontend/node_modules/
+dist/
+build/
+.npm/
+
+# IDEs and environments
+.vscode/
+.idea/
+.env
+.env.*
+
+# Data and Models
+data/raw/
+data/processed/
+qdrant_data/
+mlruns/
+outputs/
+*.tif
+*.pt
+*.pth
+*.h5
+
+# Logs
+*.log
+startup.log

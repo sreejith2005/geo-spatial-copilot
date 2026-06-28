@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoPilot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0a0a0a;
+            --bg-panel: #0d0d0f;
+            --bg-elevated: #151518;
+            
+            --accent-primary: #c9a44c; /* Desaturated gold */
+            --accent-secondary: #4a7fd6; /* Cold blue */
+            --accent-success: #22d65f;
+            --accent-error: #ef4444;
+            
+            --border-color: rgba(201, 164, 76, 0.2);
+            --border-glow: rgba(201, 164, 76, 0.4);
+            
+            --text-main: #ece8e0;
+            --text-muted: #9a9690;
+            
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-hero: 'Playfair Display', serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            --sidebar-width: 260px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Cinematic grain */
+        .grain-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.06"/></svg>');
+            mix-blend-mode: overlay;
+            z-index: 2;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(154, 150, 144, 0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+
+        /* Typography */
+        h1, h2, h3, h4, .font-display { font-family: var(--font-display); }
+        .font-hero { font-family: var(--font-hero); }
+        .font-mono { font-family: var(--font-mono); }
+        .text-muted { color: var(--text-muted); }
+        .text-primary { color: var(--accent-primary); }
+        .text-secondary { color: var(--accent-secondary); }
+        .text-success { color: var(--accent-success); }
+        .text-error { color: var(--accent-error); }
+        .uppercase { text-transform: uppercase; }
+        
+        .eyebrow {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Layout */
+        #sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #111111 0%, #050505 100%);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        #main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar-logo {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-family: var(--font-hero);
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            font-size: 22px;
+            color: var(--text-main);
+        }
+        
+        .sidebar-logo .brand-mark {
+            color: var(--accent-primary);
+            font-weight: 700;
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+            position: relative;
+            opacity: 0.8;
+        }
+
+        .nav-item:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.03);
+            opacity: 1;
+        }
+
+        .nav-item.active {
+            color: var(--text-main);
+            background: linear-gradient(90deg, rgba(74, 127, 214, 0.1) 0%, transparent 100%);
+            font-weight: 600;
+            opacity: 1;
+        }
+        
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0; width: 3px;
+            background: var(--accent-secondary);
+            box-shadow: 0 0 15px var(--accent-secondary);
+        }
+
+        .nav-icon {
+            width: 20px; height: 20px;
+            margin-right: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .nav-item svg {
+            width: 18px; height: 18px;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            fill: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active svg {
+            stroke: var(--accent-secondary);
+            fill: rgba(74, 127, 214, 0.2);
+            filter: drop-shadow(0 0 8px rgba(74, 127, 214, 0.5));
+        }
+
+        .nav-label {
+            font-size: 13px;
+            letter-spacing: 0.02em;
+        }
+
+        .nav-group-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.05);
+            margin: 1rem 1.5rem;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+            position: relative;
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Status indicators in sidebar */
+        .sys-status-list {
+            display: flex; flex-direction: column; gap: 0.75rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .status-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        .status-dot.online {
+            background-color: var(--accent-success);
+            box-shadow: 0 0 8px var(--accent-success);
+        }
+        .status-dot.offline {
+            background-color: var(--accent-error);
+            box-shadow: 0 0 8px var(--accent-error);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            overflow-y: auto;
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .tab-pane {
+            display: none;
+            height: 100%;
+            animation: fadeIn 0.4s ease forwards;
+            opacity: 0;
+        }
+        .tab-pane.active { display: block; }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Common Page Layouts */
+        .page-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            z-index: 0;
+        }
+        .page-bg::after {
+            content:''; position:absolute; top:0;left:0;width:100%;height:100%;
+            background: linear-gradient(180deg, rgba(10,10,10,0.6) 0%, rgba(10,10,10,0.95) 100%);
+        }
+        .page-content {
+            position: relative; z-index: 10; height: 100%;
+        }
+
+        /* Dashboard Hero */
+        .hero {
+            position: relative;
+            min-height: 450px;
+            padding: 4rem;
+            display: flex;
+            align-items: flex-end;
+            background-image: url('assets/earth.jpg');
+            background-size: cover;
+            background-position: center 30%;
+        }
+        
+        .hero::before {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: linear-gradient(0deg, var(--bg-deep) 0%, rgba(10,10,10,0.4) 100%);
+        }
+
+        .hero-text {
+            position: relative; z-index: 10;
+            width: 100%; max-width: 900px;
+        }
+
+        .hero h1 {
+            font-size: 5rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            line-height: 1;
+            color: var(--text-main);
+            margin: 0;
+        }
+        
+        .hero h1 .accent { font-weight: 600; color: var(--accent-primary); font-style: italic; }
+
+        /* Jagged transition */
+        .section-break {
+            height: 60px;
+            background: var(--bg-deep);
+            position: relative;
+            margin-top: -30px;
+            z-index: 20;
+            clip-path: polygon(0% 100%, 100% 100%, 100% 0%, 80% 60%, 60% 10%, 40% 70%, 20% 30%, 0% 0%);
+        }
+
+        .dashboard-grid {
+            padding: 2rem 4rem 4rem;
+            background: var(--bg-deep);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            position: relative; z-index: 10;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            position: relative;
+            border-radius: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 2.5rem;
+            min-height: 350px;
+            border: 1px solid rgba(255,255,255,0.03);
+            cursor: pointer;
+        }
+
+        .panel-bg {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background-size: cover; background-position: center; opacity: 0.3;
+            transition: transform 5s ease, opacity 0.5s ease;
+        }
+        .panel:hover .panel-bg { transform: scale(1.05); opacity: 0.6; }
+        .panel::after {
+            content:''; position:absolute; top:0; left:0; width:100%; height:100%;
+            background: linear-gradient(0deg, rgba(13,13,15,1) 0%, rgba(13,13,15,0.2) 100%);
+        }
+
+        .panel-content { position: relative; z-index: 2; }
+        .panel-mark { position: absolute; top: 1.5rem; left: 1.5rem; color: var(--accent-primary); z-index: 2; }
+        
+        .panel-title { font-family: var(--font-hero); font-size: 2.2rem; font-weight: 400; color: var(--text-main); margin-bottom: 0.75rem; line-height: 1.1; }
+        .panel-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 95%; white-space: normal; }
+
+        /* Buttons & Forms */
+        button {
+            background: transparent;
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            padding: 0.75rem 1.5rem;
+            font-family: var(--font-display);
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover:not(:disabled) {
+            background: var(--accent-primary);
+            color: var(--bg-deep);
+        }
+        button:disabled { opacity: 0.4; cursor: not-allowed; border-color: var(--text-muted); color: var(--text-muted); }
+
+        /* RAG Interface */
+        .rag-container { padding: 4rem; max-width: 900px; margin: 0 auto; }
+        .search-container { display: flex; align-items: center; margin-bottom: 4rem; gap: 1rem; }
+        .search-container input { border: none; border-bottom: 2px solid var(--text-main); background: transparent; color: var(--text-main); font-size: 2rem; padding: 1rem 0; width: 100%; outline: none; }
+        .search-container input:focus { border-color: var(--accent-secondary); }
+        .search-container button { border: none; font-size: 1.5rem; padding: 1rem; }
+        .search-container button:hover { background: transparent; color: var(--accent-primary); }
+
+        .doc-chunk {
+            margin-bottom: 3rem; position: relative; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .doc-chunk-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .doc-byline { font-family: var(--font-mono); font-size: 11px; color: var(--accent-primary); letter-spacing: 0.1em; }
+        .doc-score-meter { width: 80px; height: 2px; background: rgba(255,255,255,0.1); position: relative; }
+        .doc-score-fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--accent-secondary); }
+        .doc-text { font-family: var(--font-hero); font-size: 1.25rem; line-height: 1.8; color: var(--text-main); font-weight: 400; }
+
+        /* Vision Split Layout */
+        .vision-container { padding: 4rem; height: 100%; display: flex; flex-direction: column; background: var(--bg-deep); }
+        .vision-layout { display: grid; grid-template-columns: 350px 1fr; gap: 6rem; flex-grow: 1; margin-top: 2rem; }
+        
+        .chip-list { overflow-y: auto; height: 100%; padding-right: 1rem; }
+        .chip-item { padding: 1.25rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: all 0.2s; }
+        .chip-item:hover .chip-name { color: var(--text-main); }
+        .chip-item.active { border-color: var(--accent-primary); }
+        .chip-item.active .chip-name { color: var(--accent-primary); }
+        
+        .split-view { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; }
+        
+        .vision-data { font-family: var(--font-mono); font-size: 13px; line-height: 2.5; color: var(--text-muted); }
+        .vision-data span { color: var(--text-main); }
+        
+        .vision-panel-box { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 2.5rem; height: 100%; }
+        
+        .output-panel { opacity: 0.3; transition: opacity 0.3s; }
+        .big-score { font-family: var(--font-hero); font-size: 4rem; color: var(--accent-primary); line-height: 1; margin: 2rem 0 1rem; }
+
+        /* Agent Chat */
+        .chat-wrapper {
+            background: var(--bg-deep);
+            height: 100%;
+        }
+        .chat-container { display: flex; flex-direction: column; height: 100%; max-width: 900px; margin: 0 auto; padding: 2rem 0; position: relative; z-index: 10;}
+        .chat-starfield {
+            position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.02) 0%, transparent 70%); z-index: 1;
+        }
+
+        .chat-history { flex-grow: 1; overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+        
+        .msg { max-width: 80%; display: flex; flex-direction: column; }
+        .msg.user { align-self: flex-end; align-items: flex-end; }
+        .msg.agent { align-self: flex-start; }
+        
+        .msg-bubble { font-family: var(--font-body); font-size: 1rem; line-height: 1.7; color: var(--text-main); padding: 1.25rem 1.5rem; }
+        .msg.agent .msg-bubble { background: rgba(255,255,255,0.03); border-radius: 0 16px 16px 16px; border: 1px solid rgba(255,255,255,0.05); }
+        .msg.user .msg-bubble { background: rgba(74, 127, 214, 0.1); border-radius: 16px 16px 0 16px; text-align: left; }
+
+        .pipeline-trace {
+            font-family: var(--font-mono); font-size: 11px; margin-bottom: 0.5rem; color: var(--text-muted);
+        }
+        details.pipeline-trace summary { cursor: pointer; user-select: none; color: var(--text-muted); opacity: 0.7; transition: opacity 0.2s;}
+        details.pipeline-trace summary:hover { opacity: 1; }
+        details.pipeline-trace div { padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 8px; margin-top: 0.5rem; }
+
+        .chat-input { display: flex; align-items: center; padding: 0.5rem 1rem; background: var(--bg-elevated); border: 1px solid rgba(255,255,255,0.1); border-radius: 3rem; margin: 0 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: border-color 0.3s; }
+        .chat-input:focus-within { border-color: var(--accent-secondary); }
+        .chat-input input { border: none; background: transparent; padding: 1rem; font-size: 1.1rem; color: var(--text-main); width: 100%; outline: none; }
+        
+        .chat-send-btn { border: none; background: var(--accent-primary); color: var(--bg-deep); border-radius: 2rem; font-weight: 600; padding: 0.75rem 1.5rem; text-transform: none; letter-spacing: normal; }
+        .chat-send-btn:hover { background: #e0b95b; }
+
+        /* Typing indicator */
+        .typing-dots { display: flex; gap: 4px; padding: 0.5rem; }
+        .typing-dot { width: 6px; height: 6px; background: var(--text-muted); border-radius: 50%; animation: typing 1.4s infinite ease-in-out; opacity: 0.5; }
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); opacity: 0.5; }
+            50% { transform: translateY(-4px); opacity: 1; }
+        }
+
+        /* System Monitor */
+        .system-container { padding: 4rem; max-width: 1000px; margin: 0 auto; }
+        .terminal { background: #050505; border: 1px solid rgba(255,255,255,0.1); padding: 2rem; height: 400px; overflow-y: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; position: relative; }
+        
+        .log-entry { display: flex; gap: 1.5rem; margin-bottom: 8px; }
+        .log-time { color: var(--text-muted); }
+        .log-info { color: var(--text-main); }
+        .log-error { color: var(--accent-error); }
+        
+        .data-panel { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem; margin-bottom: 2rem;}
+        .data-row { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px dotted rgba(255,255,255,0.1); font-size: 14px; font-family: var(--font-mono); }
+        .data-label { color: var(--text-muted); }
+        .data-value { color: var(--text-main); }
+
+        /* Sources Panel */
+        .sources-panel {
+            margin-top: 1rem;
+            font-size: 13px;
+        }
+        .sources-panel summary {
+            cursor: pointer;
+            color: var(--accent-primary);
+            user-select: none;
+            font-family: var(--font-display);
+            font-weight: 500;
+            display: inline-block;
+            transition: color 0.3s;
+        }
+        .sources-panel summary:hover {
+            color: #e0b95b;
+        }
+        .sources-panel-content {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            animation: fadeIn 0.3s ease-in-out;
+            padding-left: 1rem;
+            border-left: 2px solid rgba(201, 164, 76, 0.3);
+        }
+        .source-item .source-name {
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            margin-bottom: 0.25rem;
+            font-size: 12px;
+        }
+        .source-item .source-snippet {
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            line-height: 1.5;
+            font-size: 13px;
+            white-space: pre-wrap;
+        }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1.5rem; }
+        .mt-4 { margin-top: 1.5rem; }
+    </style>
+</head>
+<body>
+
+    <!-- SVG Filters -->
+    <svg width="0" height="0" style="position: absolute;">
+        <filter id="film-grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/>
+            <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.15 0"/>
+        </filter>
+    </svg>
+    <div class="grain-overlay"></div>
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar">
+        <div class="sidebar-logo">
+            <span class="brand-mark">]</span> GeoPilot
+        </div>
+        
+        <div style="flex-grow: 1; padding-top: 1rem;">
+            <div class="nav-item active" data-target="tab-dashboard">
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></div>
+                <span class="nav-label">Command Center</span>
+            </div>
+            <div class="nav-item" data-target="tab-rag">
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>
+                <span class="nav-label">Intelligence DB</span>
+            </div>
+            <div class="nav-item" data-target="tab-vision">
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></div>
+                <span class="nav-label">Satellite Vision</span>
+            </div>
+            <div class="nav-item" data-target="tab-agent">
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>
+                <span class="nav-label">Copilot Agent</span>
+            </div>
+            
+            <div class="nav-group-divider"></div>
+            
+            <div class="nav-item" data-target="tab-system">
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
+                <span class="nav-label">System Telemetry</span>
+            </div>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="sys-status-list">
+                <div class="status-item"><div id="status-qdrant" class="status-dot offline"></div> Qdrant Vector DB</div>
+                <div class="status-item"><div id="status-vision" class="status-dot offline"></div> Vision API Engine</div>
+                <div class="status-item"><div id="status-graph" class="status-dot offline"></div> LangGraph Routing</div>
+            </div>
+            <div id="backend-status-msg" class="text-error font-mono mt-4" style="font-size: 11px; display: none;">[ERR] UPLINK OFFLINE</div>
+        </div>
+    </nav>
+
+    <!-- MAIN AREA -->
+    <div id="main-content">
+        
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="tab-pane active tab-content">
+            <div class="hero">
+                <div class="hero-text">
+                    <h1>Explore <span class="accent">Geospatial</span><br>Risk Intelligence.</h1>
+                </div>
+            </div>
+            <div class="section-break"></div>
+
+            <div class="dashboard-grid">
+                <div class="panel" onclick="switchTab('tab-rag')">
+                    <div class="panel-bg" style="background-image: url('assets/topo.jpg');"></div>
+                    <div class="panel-mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                    <div class="panel-content">
+                        <div class="eyebrow mb-2">Module 01</div>
+                        <div class="panel-title">Document<br>Intelligence</div>
+                        <div class="panel-desc">Semantic search across operational manuals and disaster response protocols via Qdrant vector space.</div>
+                    </div>
+                </div>
+
+                <div class="panel" onclick="switchTab('tab-vision')">
+                    <div class="panel-bg" style="background-image: url('assets/moon.jpg');"></div>
+                    <div class="panel-mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                    <div class="panel-content">
+                        <div class="eyebrow mb-2">Module 02</div>
+                        <div class="panel-title">Satellite<br>Analysis</div>
+                        <div class="panel-desc">Execute SAR flood segmentation inference on Sen1Floods11 region chips utilizing LightweightUNet.</div>
+                    </div>
+                </div>
+
+                <div class="panel" onclick="switchTab('tab-agent')">
+                    <div class="panel-bg" style="background-image: url('assets/nebula.jpg'); background-position: center 30%;"></div>
+                    <div class="panel-mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+                    <div class="panel-content">
+                        <div class="eyebrow mb-2">Module 03</div>
+                        <div class="panel-title">Copilot Agent</div>
+                        <div class="panel-desc">LangGraph orchestrated multi-agent reasoning combining retrieval and vision tools.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RAG TAB -->
+        <div id="tab-rag" class="tab-pane tab-content">
+            <div class="page-bg" style="background-image: url('assets/topo.jpg');"></div>
+            <div class="page-content rag-container">
+                <div class="eyebrow mb-4">01 / Intelligence Database</div>
+                
+                <form id="rag-form" class="search-container">
+                    <input type="text" id="rag-input" placeholder="Search disaster protocols..." required autocomplete="off">
+                    <button type="submit"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+                </form>
+                
+                <div id="rag-results">
+                    <div class="font-mono text-muted" style="font-size: 13px;">Waiting for search query...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISION TAB -->
+        <div id="tab-vision" class="tab-pane tab-content">
+            <div class="page-content vision-container">
+                <div class="eyebrow mb-4">02 / Satellite Analysis</div>
+                
+                <div class="vision-layout">
+                    <!-- Left: Chip List -->
+                    <div>
+                        <div class="eyebrow mb-4">Available Targets</div>
+                        <div id="chip-list" class="chip-list">
+                            <div class="font-mono text-muted" style="font-size: 12px;">Loading telemetry...</div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Split View Output -->
+                    <div class="split-view">
+                        <!-- Input Info -->
+                        <div class="vision-panel-box">
+                            <div class="eyebrow mb-4 text-primary">Source Metadata</div>
+                            
+                            <div class="vision-data mb-4">
+                                TARGET PATH:<br><span id="vis-target" style="font-size: 16px; margin-bottom: 1rem; display: block;">NONE</span>
+                                SENSOR:<br><span style="font-size: 16px; margin-bottom: 1rem; display: block;">Sentinel-1 SAR</span>
+                                RESOLUTION:<br><span style="font-size: 16px; margin-bottom: 1rem; display: block;">512x512</span>
+                                BANDS:<br><span style="font-size: 16px; margin-bottom: 1rem; display: block;">VH, VV</span>
+                            </div>
+                            <button id="vision-run-btn" disabled>EXECUTE INFERENCE</button>
+                        </div>
+                        
+                        <!-- Output Info -->
+                        <div id="vision-results-area" class="vision-panel-box output-panel" style="overflow-y: auto;">
+                            <div class="eyebrow mb-4 text-primary">Analysis Output</div>
+
+                            <div style="display: flex; justify-content: space-between;">
+                                <div>
+                                    <div id="vision-badge" class="eyebrow mb-2">AWAITING</div>
+                                    <div class="big-score" id="val-conf" style="font-size: 3rem; margin-top: 0.5rem; margin-bottom: 0;">--</div>
+                                    <div class="eyebrow text-muted mt-2">CONFIDENCE</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div id="severity-badge" class="eyebrow mb-2 text-muted">--</div>
+                                    <div class="big-score" id="val-risk" style="font-size: 3rem; margin-top: 0.5rem; margin-bottom: 0; color: var(--text-main);">--</div>
+                                    <div class="eyebrow text-muted mt-2">RISK SCORE</div>
+                                </div>
+                            </div>
+                            
+                            <div class="vision-data" style="margin-top: 2rem; line-height: 1.8;">
+                                <div style="margin-bottom: 1rem;">
+                                    FLOOD EXTENT:<br><span id="val-water" style="font-size: 20px;">0%</span>
+                                </div>
+                                <div>
+                                    ANALYST NARRATIVE:<br>
+                                    <div id="val-explanation" style="font-size: 14px; font-family: var(--font-body); color: var(--text-main); margin-top: 0.5rem; border-left: 2px solid var(--accent-primary); padding-left: 1rem; white-space: normal;">
+                                        Awaiting analysis...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AGENT TAB -->
+        <div id="tab-agent" class="tab-pane tab-content">
+            <div class="chat-wrapper">
+                <div class="chat-starfield"></div>
+                <div class="page-content chat-container">
+                    <div class="eyebrow mb-4" style="padding: 0 2rem;">03 / Copilot Agent</div>
+                    <div id="chat-history" class="chat-history">
+                        <div class="msg agent">
+                            <div class="msg-bubble">
+                                Hello. I'm GeoPilot, your geospatial risk intelligence assistant. I am connected to the Qdrant vector space for protocol retrieval and the Sentinel-1 Vision API for flood risk assessment.<br><br>How can I help you today?
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input">
+                        <input type="text" id="agent-input" placeholder="Message GeoPilot..." autocomplete="off">
+                        <button id="agent-send-btn" class="chat-send-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SYSTEM TAB -->
+        <div id="tab-system" class="tab-pane tab-content">
+            <div class="page-content system-container">
+                <div class="eyebrow mb-4">System Telemetry</div>
+                
+                <div class="data-panel">
+                    <div class="data-row"><span class="data-label">API Gateway</span><span id="ht-api" class="data-value text-error">WAITING</span></div>
+                    <div class="data-row"><span class="data-label">Vector Database (Qdrant)</span><span id="ht-qdrant" class="data-value text-error">WAITING</span></div>
+                    <div class="data-row"><span class="data-label">Vision Model Engine</span><span id="ht-vision" class="data-value text-error">WAITING</span></div>
+                    <div class="data-row"><span class="data-label">LangGraph Orchestrator</span><span id="ht-graph" class="data-value text-error">WAITING</span></div>
+                </div>
+
+                <div class="eyebrow mb-2">Network Activity Log [Append-Only]</div>
+                <div id="activity-log" class="terminal">
+                    <div class="log-entry"><span class="log-time">[00:00:00.000]</span><span class="log-info">[SYS] Telemetry stream initialized.</span></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Config & State
+        const API_BASE = '';
+        let activeChipPath = null;
+        let isTyping = false;
+
+        // Logging
+        function getLogTime() {
+            const now = new Date();
+            return `[${now.toISOString().substring(11, 23)}]`;
+        }
+        function appendLog(msg, type='info') {
+            const c = document.getElementById('activity-log');
+            if(!c) return;
+            const el = document.createElement('div');
+            el.className = 'log-entry';
+            const colorClass = type === 'error' ? 'log-error' : 'log-info';
+            el.innerHTML = `<span class="log-time">${getLogTime()}</span><span class="${colorClass}">${msg}</span>`;
+            c.appendChild(el);
+            c.scrollTop = c.scrollHeight;
+        }
+
+        // API Wrapper
+        async function fetchAPI(endpoint, options = {}) {
+            const method = options.method || 'GET';
+            appendLog(`REQ: ${method} ${endpoint}`, 'info');
+            const start = performance.now();
+            try {
+                const res = await fetch(`${API_BASE}${endpoint}`, {
+                    ...options,
+                    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+                });
+                const latency = (performance.now() - start).toFixed(1);
+                if (!res.ok) {
+                    appendLog(`ERR: HTTP ${res.status} (${latency}ms)`, 'error');
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                const data = await res.json();
+                appendLog(`RES: 200 OK (${latency}ms)`, 'info');
+                return data;
+            } catch (err) {
+                appendLog(`FAIL: ${err.message}`, 'error');
+                throw err;
+            }
+        }
+
+        // Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            const navItem = document.querySelector(`.nav-item[data-target="${tabId}"]`);
+            if(navItem) navItem.classList.add('active');
+
+            if (tabId === 'tab-vision' && document.getElementById('chip-list').children.length <= 1) {
+                loadChips();
+            }
+        }
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => switchTab(item.dataset.target));
+        });
+
+        // Health Polling
+        async function pollStatus() {
+            try {
+                await fetchAPI('/health');
+                document.getElementById('backend-status-msg').style.display = 'none';
+                document.getElementById('ht-api').textContent = 'ONLINE';
+                document.getElementById('ht-api').className = 'data-value text-success';
+                
+                const ready = await fetchAPI('/ready');
+                
+                const update = (id, stat) => {
+                    const dot = document.getElementById(`status-${id}`);
+                    const td = document.getElementById(`ht-${id}`);
+                    if (stat === 'ok') {
+                        dot.className = 'status-dot online';
+                        td.textContent = 'ONLINE';
+                        td.className = 'data-value text-success';
+                    } else {
+                        dot.className = 'status-dot offline';
+                        td.textContent = 'ERROR';
+                        td.className = 'data-value text-error';
+                    }
+                };
+                
+                update('qdrant', ready.qdrant_status);
+                update('vision', ready.vision_status);
+                update('graph', ready.graph_status);
+                
+            } catch (err) {
+                document.getElementById('backend-status-msg').style.display = 'block';
+                ['qdrant', 'vision', 'graph'].forEach(id => {
+                    document.getElementById(`status-${id}`).className = 'status-dot offline';
+                    document.getElementById(`ht-${id}`).textContent = 'OFFLINE';
+                    document.getElementById(`ht-${id}`).className = 'data-value text-error';
+                });
+                document.getElementById('ht-api').textContent = 'OFFLINE';
+                document.getElementById('ht-api').className = 'data-value text-error';
+            }
+        }
+        setInterval(pollStatus, 10000);
+        setTimeout(pollStatus, 500);
+
+        // RAG functionality
+        document.getElementById('rag-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('rag-input');
+            const query = input.value.trim();
+            if (!query) return;
+            
+            const resContainer = document.getElementById('rag-results');
+            resContainer.innerHTML = '<div class="font-mono text-primary mt-4">SEARCHING...</div>';
+            
+            try {
+                const response = await fetchAPI('/retrieve', {
+                    method: 'POST',
+                    body: JSON.stringify({ query: query })
+                });
+                
+                if (response.status === 'error') {
+                    resContainer.innerHTML = `<div class="font-mono text-error mt-4">ERROR: ${response.error_message}</div>`;
+                    return;
+                }
+                
+                if (!response.chunks || response.chunks.length === 0) {
+                    resContainer.innerHTML = '<div class="font-mono text-muted mt-4">NO MATCHES FOUND.</div>';
+                    return;
+                }
+                
+                resContainer.innerHTML = '';
+                response.chunks.forEach((chunk, index) => {
+                    const cite = response.citations && response.citations[index] ? response.citations[index] : {};
+                    const score = (chunk.score || 0);
+                    const scorePercent = (score * 100).toFixed(0) + '%';
+                    const source = cite.source || cite.file_name || 'UNKNOWN';
+                    
+                    const el = document.createElement('div');
+                    el.className = 'doc-chunk';
+                    el.innerHTML = `
+                        <div class="doc-chunk-header">
+                            <span class="doc-byline">SRC: ${source}</span>
+                            <div class="doc-score-meter">
+                                <div class="doc-score-fill" style="width: ${scorePercent};"></div>
+                            </div>
+                        </div>
+                        <div class="doc-text">${chunk.text}</div>
+                    `;
+                    resContainer.appendChild(el);
+                });
+            } catch (err) {
+                resContainer.innerHTML = `<div class="font-mono text-error mt-4">SYS_ERR: ${err.message}</div>`;
+            }
+        });
+
+        // Vision functionality
+        async function loadChips() {
+            const list = document.getElementById('chip-list');
+            try {
+                const response = await fetchAPI('/chips');
+                list.innerHTML = '';
+                
+                if (response.status === 'error' || !response.chips || response.chips.length === 0) {
+                    list.innerHTML = `<div class="font-mono text-error" style="font-size:12px;">NO IMAGERY AVAILABLE</div>`;
+                    return;
+                }
+                
+                response.chips.forEach(chipObj => {
+                    const chipPath = chipObj.file_path;
+                    const el = document.createElement('div');
+                    el.className = 'chip-item';
+                    const parts = chipPath.split('/');
+                    const filename = parts[parts.length - 1];
+                    
+                    el.innerHTML = `
+                        <div class="chip-name font-mono" style="font-size: 14px; margin-bottom: 4px;">${filename}</div>
+                        <div class="font-mono text-muted" style="font-size: 11px;">EPSG:4326</div>
+                    `;
+                    
+                    el.addEventListener('click', () => {
+                        document.querySelectorAll('.chip-item').forEach(c => c.classList.remove('active'));
+                        el.classList.add('active');
+                        activeChipPath = chipPath;
+                        document.getElementById('vis-target').textContent = filename;
+                        
+                        const btn = document.getElementById('vision-run-btn');
+                        btn.disabled = false;
+                        
+                        document.getElementById('vision-results-area').style.opacity = '0.3';
+                    });
+                    
+                    list.appendChild(el);
+                });
+            } catch (err) {
+                list.innerHTML = `<div class="font-mono text-error">FETCH_ERR</div>`;
+            }
+        }
+
+        document.getElementById('vision-run-btn').addEventListener('click', async () => {
+            if (!activeChipPath) return;
+            const btn = document.getElementById('vision-run-btn');
+            const resArea = document.getElementById('vision-results-area');
+            const badge = document.getElementById('vision-badge');
+            
+            btn.disabled = true;
+            btn.textContent = 'EXECUTING INFERENCE...';
+            resArea.style.opacity = '0.3';
+            
+            try {
+                const response = await fetchAPI('/vision/infer', {
+                    method: 'POST',
+                    body: JSON.stringify({ chip_path: activeChipPath })
+                });
+                
+                btn.textContent = 'EXECUTE INFERENCE';
+                btn.disabled = false;
+                
+                if (response.status === 'error') {
+                    alert(`Inference Error: ${response.error_message}`);
+                    return;
+                }
+                
+                const vr = response.vision_result || {};
+                
+                resArea.style.opacity = '1';
+                
+                document.getElementById('val-water').textContent = (vr.flood_extent_pct || vr.water_percentage || 0).toFixed(1) + '%';
+                
+                const confidencePercent = (vr.confidence || 0).toFixed(1);
+                document.getElementById('val-conf').textContent = confidencePercent + '%';
+                
+                if (vr.flood_detected) {
+                    badge.textContent = `FLOOD RISK DETECTED`;
+                    badge.style.color = 'var(--accent-error)';
+                } else {
+                    badge.textContent = `NOMINAL`;
+                    badge.style.color = 'var(--accent-success)';
+                }
+
+                const severityBadge = document.getElementById('severity-badge');
+                if (severityBadge) {
+                    severityBadge.textContent = (vr.severity || '--') + ' SEVERITY';
+                    const s = vr.severity;
+                    if (s === 'LOW') severityBadge.style.color = 'var(--accent-success)';
+                    else if (s === 'MODERATE') severityBadge.style.color = 'var(--accent-secondary)';
+                    else if (s === 'HIGH') severityBadge.style.color = '#f59e0b';
+                    else if (s === 'SEVERE') severityBadge.style.color = 'var(--accent-error)';
+                    else severityBadge.style.color = 'var(--text-muted)';
+                }
+                
+                const riskEl = document.getElementById('val-risk');
+                if (riskEl) {
+                    riskEl.textContent = (vr.risk_score || 0).toFixed(1);
+                }
+                
+                const expEl = document.getElementById('val-explanation');
+                if (expEl) {
+                    expEl.textContent = vr.explanation || 'No explanation provided.';
+                }
+                
+            } catch (err) {
+                btn.textContent = 'EXECUTE INFERENCE';
+                btn.disabled = false;
+                alert(`System Error: ${err.message}`);
+            }
+        });
+
+        // Agent Chat
+        function appendMsg(role, text, response = null) {
+            const h = document.getElementById('chat-history');
+            const wrap = document.createElement('div');
+            wrap.className = `msg ${role}`;
+            
+            let html = '';
+            
+            html += `<div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>`;
+            
+            if (role === 'agent' && response && response.sources && response.sources.length > 0) {
+                html += `
+                    <details class="sources-panel">
+                        <summary>[Show Sources]</summary>
+                        <div class="sources-panel-content">
+                            ${response.sources.map(src => `
+                                <div class="source-item">
+                                    <div class="source-name">${src.name} (Page ${src.page}) <span style="font-size: 0.8em; color: var(--text-secondary);">(Score: ${src.score ? src.score.toFixed(2) : 'N/A'})</span></div>
+                                    <div class="source-snippet">${src.snippet}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </details>
+                `;
+            }
+            
+            if (role === 'agent' && response && (response.trace_log || response.executed_agents)) {
+                const nodes = (response.executed_agents || []).map(n => `<span class="trace-node">${n.toUpperCase()}</span>`).join(' → ');
+                const execTime = response.execution_time ? ` (${response.execution_time.toFixed(2)}s)` : '';
+                const traces = (response.trace_log || []).map(t => `<li>${t}</li>`).join('');
+                html += `
+                    <details class="pipeline-trace">
+                        <summary>Technical Trace${execTime}</summary>
+                        <div style="margin-bottom: 10px;">
+                            <span class="trace-node" style="color:var(--accent-primary); border-left: 2px solid var(--accent-primary);">[NODE SEQUENCE]</span>
+                            ${nodes}
+                        </div>
+                        <div style="font-family: monospace; font-size: 0.85em; background: rgba(0,0,0,0.1); padding: 5px; border-radius: 4px;">
+                            <ul style="margin: 0; padding-left: 20px;">
+                                ${traces}
+                            </ul>
+                        </div>
+                    </details>
+                `;
+            }
+            
+            wrap.innerHTML = html;
+            
+            const typing = document.getElementById('typing-ind');
+            if (typing) h.insertBefore(wrap, typing);
+            else h.appendChild(wrap);
+            
+            h.scrollTop = h.scrollHeight;
+        }
+
+        async function sendAgentMsg() {
+            const input = document.getElementById('agent-input');
+            const q = input.value.trim();
+            if(!q || isTyping) return;
+            
+            appendMsg('user', q);
+            input.value = '';
+            isTyping = true;
+            
+            const h = document.getElementById('chat-history');
+            const typing = document.createElement('div');
+            typing.id = 'typing-ind';
+            typing.className = 'msg agent';
+            typing.innerHTML = `
+                <div class="msg-bubble">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+                    </div>
+                </div>`;
+            h.appendChild(typing);
+            h.scrollTop = h.scrollHeight;
+            
+            try {
+                const payload = { query: q };
+                if (activeChipPath) payload.chip_path = activeChipPath;
+                
+                const response = await fetchAPI('/analyze', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                typing.remove();
+                isTyping = false;
+                
+                if (response.status === 'error') {
+                    appendMsg('agent', `I encountered an error: ${response.error_message}`);
+                    return;
+                }
+                
+                appendMsg('agent', response.answer || response.summary || "Complete.", response);
+                
+            } catch (err) {
+                typing.remove();
+                isTyping = false;
+                appendMsg('agent', `Connection failed. ${err.message}`);
+            }
+        }
+
+        document.getElementById('agent-send-btn').addEventListener('click', sendAgentMsg);
+        document.getElementById('agent-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendAgentMsg();
+        });
+
+    </script>
+</body>
+</html>
