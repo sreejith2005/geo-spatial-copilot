@@ -24,3 +24,7 @@ timestamp,chip_path,severity,risk_score,district,state
 2026-06-28T14:00:01.767173,Unknown,High,95.0,Sonitpur,Assam
 2026-06-28T16:11:19.379465,data/raw/sen1floods11/subset\india\India_1018317_S1Hand.tif,High,80.0,Unknown,Unknown
 2026-06-28T16:29:16.707803,Unknown,High,95.0,Sonitpur,Assam
+2026-06-29T05:07:13.210867,Unknown,Medium,40.0,Unknown,Unknown
+2026-06-29T05:08:57.069712,Unknown,Medium,40.0,Unknown,Unknown
+2026-06-29T05:09:09.782448,data/raw/sen1floods11/subset/india/India_1018317_S1Hand.tif,High,80.0,Unknown,Unknown
+2026-06-29T09:42:21.875574,Unknown,Medium,65.0,Sonitpur,Assam

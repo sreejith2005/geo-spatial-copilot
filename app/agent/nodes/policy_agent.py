@@ -7,9 +7,7 @@ _indexer = None
 def get_indexer() -> QdrantIndexer:
     global _indexer
     if _indexer is None:
-        host = os.getenv("QDRANT_HOST", "localhost")
-        port = os.getenv("QDRANT_PORT", "6333")
-        qdrant_url = f"http://{host}:{port}"
+        qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
         try:
             _indexer = QdrantIndexer(qdrant_url=qdrant_url)
         except Exception as e:

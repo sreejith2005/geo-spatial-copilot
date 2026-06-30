@@ -3,6 +3,7 @@ import sys
 import json
 import logging
 from pathlib import Path
+import mlflow
 
 # Ensure the app module can be imported
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -91,7 +92,34 @@ def main():
         json.dump(splits_record, f, indent=4)
         
     trainer = Trainer(model, criterion, optimizer, device, checkpoint_dir=checkpoint_dir)
-    trainer.fit(train_loader, val_loader, epochs=epochs)
+    
+    # Capture final metrics without recomputing
+    original_validate = trainer.validate_epoch
+    def patched_validate(dataloader):
+        loss, metrics = original_validate(dataloader)
+        trainer._final_loss = loss
+        trainer._final_metrics = metrics
+        return loss, metrics
+    trainer.validate_epoch = patched_validate
+
+    mlflow.set_experiment("FloodSegmentation")
+    with mlflow.start_run():
+        mlflow.log_params({
+            "learning_rate": learning_rate,
+            "batch_size": batch_size,
+            "epochs": epochs,
+            "optimizer": optimizer.__class__.__name__
+        })
+        
+        trainer.fit(train_loader, val_loader, epochs=epochs)
+        
+        mlflow.log_metrics({
+            "Validation Loss": trainer._final_loss,
+            "Dice": trainer._final_metrics["dice"],
+            "IoU": trainer._final_metrics["iou"],
+            "Precision": trainer._final_metrics["precision"],
+            "Recall": trainer._final_metrics["recall"]
+        })
     
     logger.info(f"Training finished. Best model saved in {checkpoint_dir}")
 

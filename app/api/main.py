@@ -138,6 +138,7 @@ async def invalid_sentinel_input_handler(request: Request, exc: InvalidSentinelI
     )
 
 def validate_chip_path(chip_path: str):
+    chip_path = chip_path.replace("\\", "/")
     logger.info(f"Validating chip path: {chip_path}")
     if not os.path.exists(chip_path):
         logger.error(f"Validation failed: Chip path does not exist: {chip_path}")
@@ -203,6 +204,7 @@ async def analyze(request: AnalyzeRequest):
     logger.info(f"Received /analyze request. Query: '{request.query}', Chip Path: '{request.chip_path}'")
     
     if request.chip_path:
+        request.chip_path = request.chip_path.replace("\\", "/")
         validate_chip_path(request.chip_path)
     
     # Fetch conversational memory
@@ -360,6 +362,8 @@ async def vision_infer(request: VisionInferRequest):
             error_message="Vision service is not available."
         )
         
+    if request.chip_path:
+        request.chip_path = request.chip_path.replace("\\", "/")
     validate_chip_path(request.chip_path)
         
     try:
@@ -382,6 +386,8 @@ async def vision_debug(request: VisionDebugRequest):
             error_message="Vision service is not available."
         )
         
+    if request.chip_path:
+        request.chip_path = request.chip_path.replace("\\", "/")
     validate_chip_path(request.chip_path)
         
     try:
@@ -406,6 +412,10 @@ async def vision_change_detection(request: ChangeDetectionRequest):
             error_message="Vision service is not available."
         )
         
+    if request.before_image:
+        request.before_image = request.before_image.replace("\\", "/")
+    if request.after_image:
+        request.after_image = request.after_image.replace("\\", "/")
     validate_chip_path(request.before_image)
     validate_chip_path(request.after_image)
         
@@ -442,6 +452,9 @@ async def list_chips():
         valid_chips = []
         for record in df.to_dict(orient="records"):
             chip_path = record.get("file_path", "")
+            if isinstance(chip_path, str):
+                chip_path = chip_path.replace("\\", "/")
+                record["file_path"] = chip_path
             try:
                 validate_chip_path(chip_path)
                 valid_chips.append(record)

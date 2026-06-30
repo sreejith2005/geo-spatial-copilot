@@ -15,7 +15,7 @@ class QdrantIndexer:
     def __init__(self, 
                  collection_name: str = "documents", 
                  embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
-                 qdrant_url: str = "http://localhost:6333"):
+                 qdrant_url: str = None):
         """
         Initialize the Qdrant Indexer.
         
@@ -25,6 +25,7 @@ class QdrantIndexer:
             qdrant_url: URL to the Qdrant instance.
         """
         self.collection_name = collection_name
+        self.qdrant_url = qdrant_url or os.environ.get("QDRANT_URL", "http://localhost:6333")
         
         logger.info(f"Loading embedding model: {embedding_model_name}")
         # Add HF token if present to avoid warnings/rate limits
@@ -36,8 +37,8 @@ class QdrantIndexer:
         self.vector_size = len(test_embedding)
         logger.info(f"Model loaded. Vector dimension is {self.vector_size}")
         
-        logger.info(f"Connecting to Qdrant at {qdrant_url}")
-        self.client = QdrantClient(url=qdrant_url)
+        logger.info(f"Connecting to Qdrant at {self.qdrant_url}")
+        self.client = QdrantClient(url=self.qdrant_url)
         self._ensure_collection()
 
     def _ensure_collection(self):
@@ -47,11 +48,14 @@ class QdrantIndexer:
         
         if not exists:
             logger.info(f"Collection '{self.collection_name}' not found. Creating new collection...")
-            self.client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config=VectorParams(size=self.vector_size, distance=Distance.COSINE),
-            )
-            logger.info(f"Collection '{self.collection_name}' created successfully.")
+            try:
+                self.client.create_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=VectorParams(size=self.vector_size, distance=Distance.COSINE),
+                )
+                logger.info(f"Collection '{self.collection_name}' created successfully.")
+            except Exception as e:
+                logger.warning(f"Could not create collection (might have been created by another worker): {e}")
         else:
             logger.info(f"Collection '{self.collection_name}' already exists.")
 
